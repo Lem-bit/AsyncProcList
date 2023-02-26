@@ -35,6 +35,7 @@ type
       FMessage: Cardinal;
       FHandle : THandle;
     public
+      constructor Create(AProcRef: TAsyncProcRef); overload;
       constructor Create(AProcRef: TAsyncProcRef; AHandle: THandle = INVALID_HANDLE_VALUE;
         AMessage: Cardinal = 0); overload;
       constructor Create(AProcRef: TAsyncProcRef; ACallBack: TAsyncProcRefCallBack = nil); overload;
@@ -58,6 +59,7 @@ type
   end;
 
 var AsyncProcList: TAsyncProcList;
+
 implementation
 
 { TAsyncProcList }
@@ -85,9 +87,10 @@ var Item: IAsyncObject;
 begin
   while not Terminated do
   begin
+
     for var i := FList.Count - 1 downto 0 do
+    begin
       if Supports(FList[i], IAsyncObject, Item) then
-      begin
         try
           Item.Run;
         except
@@ -95,8 +98,11 @@ begin
             OnError(TAsyncResult.Create(Format('TAsyncProcList.Execute: %s', [e.Message])));
         end;
 
-        FList.Remove(Item);
-      end;
+      FList.Remove(Item);
+
+      if Terminated then
+        Break;
+    end;
 
     sleep(1);
   end;
@@ -119,6 +125,14 @@ constructor TAsyncObject.Create(AProcRef: TAsyncProcRef;
 begin
   FProcRef:= AProcRef;
   FProcRefCallBack:= ACallBack;
+  FMessage:= 0;
+  FHandle := INVALID_HANDLE_VALUE;
+end;
+
+constructor TAsyncObject.Create(AProcRef: TAsyncProcRef);
+begin
+  FProcRef:= AProcRef;
+  FProcRefCallBack:= nil;
   FMessage:= 0;
   FHandle := INVALID_HANDLE_VALUE;
 end;
