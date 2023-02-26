@@ -22,9 +22,11 @@ type
   IAsyncObject = interface
     ['{047D5C4D-E4F4-4024-B1DC-7659625096A5}']
     procedure Run;
+    procedure CallBack;
+    function Data: Pointer;
   end;
 
-  TAsyncProcRef         = reference to procedure;
+  TAsyncProcRef         = reference to procedure(out AData: Pointer);
   TAsyncProcRefCallBack = reference to procedure(Sender: IAsyncObject);
 
   TAsyncObject = class(TInterfacedObject, IAsyncObject)
@@ -34,6 +36,8 @@ type
 
       FMessage: Cardinal;
       FHandle : THandle;
+
+      FPointer: Pointer;
     public
       constructor Create(AProcRef: TAsyncProcRef); overload;
       constructor Create(AProcRef: TAsyncProcRef; AHandle: THandle = INVALID_HANDLE_VALUE;
@@ -41,9 +45,12 @@ type
       constructor Create(AProcRef: TAsyncProcRef; ACallBack: TAsyncProcRefCallBack = nil); overload;
     public
       procedure Run;
+      procedure CallBack;
+      function Data: Pointer;
   end;
 
   TAsyncListOnError = procedure(Sender: IAsyncResult) of Object;
+  TAsyncListOnEnd   = procedure of Object;
   TAsyncProcList = class(TThread)
     strict private
       FList: TInterfaceList;
@@ -53,9 +60,11 @@ type
     public
       procedure Execute; override;
     public
-      OnError: TAsyncListOnError;
+      OnEndList: TAsyncListOnEnd;
+      OnError  : TAsyncListOnError;
     public
       procedure Add(AAsyncObject: IAsyncObject);
+      function Count: Integer;
   end;
 
 var AsyncProcList: TAsyncProcList;
@@ -69,6 +78,11 @@ begin
   FList.Add(AAsyncObject);
 end;
 
+function TAsyncProcList.Count: Integer;
+begin
+  Result:= FList.Count;
+end;
+
 constructor TAsyncProcList.Create;
 begin
   inherited Create(False);
@@ -78,6 +92,9 @@ end;
 
 destructor TAsyncProcList.Destroy;
 begin
+  OnError  := nil;
+  OnEndList:= nil;
+
   FreeAndNil(FList);
   inherited;
 end;
@@ -88,21 +105,27 @@ begin
   while not Terminated do
   begin
 
-    for var i := FList.Count - 1 downto 0 do
-    begin
-      if Supports(FList[i], IAsyncObject, Item) then
+    if FList.Count > 0 then
+      try
         try
-          Item.Run;
-        except
-          on e: exception do
-            OnError(TAsyncResult.Create(Format('TAsyncProcList.Execute: %s', [e.Message])));
+          if Supports(FList.First, IAsyncObject, Item) then
+            Item.Run;
+
+          Synchronize(nil, procedure begin
+            Item.CallBack
+          end);
+        finally
+          FList.Remove(FList.First);
         end;
 
-      FList.Remove(Item);
+        if Assigned(OnEndList) and (FList.Count < 1) then
+          Synchronize(nil, OnEndList);
 
-      if Terminated then
-        Break;
-    end;
+      except
+        on e: exception do
+          if Assigned(OnError) and (not Terminated) then
+            OnError(TAsyncResult.Create(Format('TAsyncProcList.Execute: %s', [e.Message])));
+      end;
 
     sleep(1);
   end;
@@ -120,6 +143,12 @@ begin
   FHandle:= AHandle;
 end;
 
+procedure TAsyncObject.CallBack;
+begin
+  if Assigned(FProcRefCallBack) then
+    FProcRefCallBack(Self);
+end;
+
 constructor TAsyncObject.Create(AProcRef: TAsyncProcRef;
   ACallBack: TAsyncProcRefCallBack);
 begin
@@ -127,6 +156,11 @@ begin
   FProcRefCallBack:= ACallBack;
   FMessage:= 0;
   FHandle := INVALID_HANDLE_VALUE;
+end;
+
+function TAsyncObject.Data: Pointer;
+begin
+  Result:= FPointer;
 end;
 
 constructor TAsyncObject.Create(AProcRef: TAsyncProcRef);
@@ -142,13 +176,10 @@ begin
   if not Assigned(FProcRef) then
     raise Exception.Create('Error call procedure');
 
-  FProcRef;
+  FProcRef(FPointer);
 
   if (FHandle <> INVALID_HANDLE_VALUE) and (FMessage > 0) then
-    PostMessage(FHandle, FMessage, 0, 0);
-
-  if Assigned(FProcRefCallBack) then
-    FProcRefCallBack(Self);
+    PostMessage(FHandle, FMessage, 0, NativeUInt(FPointer));
 end;
 
 { TAsyncResult }
