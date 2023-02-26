@@ -1,25 +1,27 @@
 # AsyncProcList
 
-#### uses dlAsyncProcList;
+Пример:
 
----
-`AsyncProcList.Add(TAsyncObject.Create(
+```pascal
+
+uses dlAsyncProcList;
+
+//Выполнение процедуры
+AsyncProcList.Add(TAsyncObject.Create(
   procedure
   begin
     ...
   end)
- );`
- 
- ---
- `Use wm_... for return completed procedure`
- 
- ---
- `AsyncProcList.Add(TAsyncObject.Create(
-   procedure
-   begin
-     ...
-   end,
-   Handle,
-   WM...
- );`
- 
+);
+
+Для оповещения завершения выполнения через Windows Messages
+AsyncProcList.Add(TAsyncObject.Create(
+  procedure
+  begin
+    ...
+  end,
+  Handle,
+  WM...
+);
+
+```
