@@ -9,7 +9,7 @@ uses dlAsyncProcList;
 //Выполнение процедуры
 AsyncProcList.Add(
   TAsyncObject.Create(
-    procedure
+    procedure (out AData: Pointer)
     begin
       //code
     end,
@@ -19,7 +19,7 @@ AsyncProcList.Add(
 Для оповещения завершения выполнения через Windows Messages
 AsyncProcList.Add(
   TAsyncObject.Create(
-    procedure
+    procedure (out AData: Pointer)
     begin
       //code
     end,
