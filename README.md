@@ -3,14 +3,14 @@
 #### uses dlAsyncProcList;
 
 ---
-`AsyncProcList.Add(TAsyncObject.Create(
+`AsyncProcList.Add(TAsyncObject.Create(`
 
-  procedure
-  begin
-    ...
-  end)
+  `procedure`
+  `begin`
+    `...`
+  `end)`
   
- );`
+ `);`
  
  ---
  Use wm_... for return completed procedure
