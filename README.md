@@ -6,7 +6,7 @@
 
 uses dlAsyncProcList;
 
-//Выполнение процедуры
+//Выполнение процедуры, без callback функции
 AsyncProcList.Add(
   TAsyncObject.Create(
     procedure (out AData: Pointer)
@@ -16,7 +16,7 @@ AsyncProcList.Add(
     nil //callback proc
   );
 
-Для оповещения завершения выполнения через Windows Messages
+//С использованием Windows Messages
 AsyncProcList.Add(
   TAsyncObject.Create(
     procedure (out AData: Pointer)
