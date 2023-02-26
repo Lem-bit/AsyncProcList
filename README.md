@@ -1,20 +1,14 @@
 # AsyncProcList
 
----
-procedure OnAsyncError(Sender: IAsyncResult);
-...
+#### uses dlAsyncProcList;
 
 ---
-AsyncProcList.OnError:= OnAsyncError;
-...
-
----
-AsyncProcList.Add(TAsyncObject.Create(
+`AsyncProcList.Add(TAsyncObject.Create(
   procedure
   begin
     ...
   end)
- );
+ );`
  
  ---
  Use wm_... for return completed procedure
